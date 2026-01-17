@@ -1,11 +1,7 @@
 # Environment Variables
 .env
+.env.*
 .env.local
-.env.*.local
-node_modules
-dist
-.DS_Store
-*.env
 
 # Python
 __pycache__/
