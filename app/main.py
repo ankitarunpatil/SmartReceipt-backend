@@ -261,3 +261,47 @@ async def server_error(_, __):
         status_code=500,
         content={"error": "Internal Server Error"},
     )
+
+@app.get("/analytics")
+def get_analytics(db: Session = Depends(get_db)):
+    """
+    Get spending analytics
+    
+    Returns:
+    - Total receipts count
+    - Total amount spent
+    - Spending by category
+    - Spending by month
+    - Recent receipts
+    """
+    receipts = db.query(Receipt).all()
+    
+    # Calculate totals
+    total_receipts = len(receipts)
+    total_spent = sum(r.total for r in receipts)
+    
+    # By category
+    by_category = defaultdict(float)
+    for r in receipts:
+        by_category[r.category] += r.total
+    
+    # By month
+    by_month = defaultdict(float)
+    for r in receipts:
+        try:
+            month_key = r.date[:7]  # YYYY-MM
+            by_month[month_key] += r.total
+        except:
+            pass
+    
+    # Recent receipts (last 5)
+    recent = db.query(Receipt).order_by(Receipt.processed_at.desc()).limit(5).all()
+    
+    return {
+        "total_receipts": total_receipts,
+        "total_spent": round(total_spent, 2),
+        "average_receipt": round(total_spent / total_receipts, 2) if total_receipts > 0 else 0,
+        "by_category": dict(by_category),
+        "by_month": dict(sorted(by_month.items(), reverse=True)),
+        "recent_receipts": [r.to_dict() for r in recent]
+    }
